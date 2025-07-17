@@ -15,7 +15,8 @@
         android:src="@android:drawable/ic_menu_mapmode"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        android:onClick="selecteImage"/>
 
     <EditText
         android:id="@+id/nameText"
@@ -60,13 +61,15 @@
             android:layout_marginHorizontal="5dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Save" />
+            android:text="Save"
+            android:onClick="saveCook"/>
 
         <Button
             android:id="@+id/deleteButton"
             android:layout_marginHorizontal="5dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Delete" />
+            android:text="Delete"
+            android:onClick="deleteCook"/>
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
