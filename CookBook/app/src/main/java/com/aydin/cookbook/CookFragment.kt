@@ -86,7 +86,7 @@ class CookFragment : Fragment() {
                             //izin istenecek
                             permissionLauncher.launch(Manifest.permission.READ_MEDIA_IMAGES)
                         }
-                    )
+                    ).show()
                 } else {
                     // izin istenecek
                     permissionLauncher.launch(Manifest.permission.READ_MEDIA_IMAGES)
@@ -116,7 +116,7 @@ class CookFragment : Fragment() {
                                 //izin istenecek
                                 permissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
                             }
-                        )
+                        ).show()
                 } else {
                     // izin istenecek
                     permissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
