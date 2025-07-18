@@ -7,7 +7,7 @@
 
     <fragment
         android:id="@+id/listFragment"
-        android:name="com.aydin.cookbook.ListFragment"
+        android:name="com.aydin.cookbook.view.ListFragment"
         android:label="fragment_list"
         tools:layout="@layout/fragment_list" >
         <action
@@ -16,7 +16,7 @@
     </fragment>
     <fragment
         android:id="@+id/cookFragment"
-        android:name="com.aydin.cookbook.CookFragment"
+        android:name="com.aydin.cookbook.view.CookFragment"
         android:label="fragment_cook"
         tools:layout="@layout/fragment_cook" >
         <argument
@@ -25,5 +25,8 @@
         <argument
             android:name="id"
             app:argType="integer" />
+        <action
+            android:id="@+id/action_cookFragment_to_listFragment"
+            app:destination="@id/listFragment" />
     </fragment>
 </navigation>

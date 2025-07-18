@@ -1,9 +1,10 @@
-package com.aydin.cookbook
+package com.aydin.cookbook.view
 
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
@@ -14,14 +15,23 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.navigation.Navigation
+import androidx.room.Room
+import androidx.room.RoomDatabase
 import com.aydin.cookbook.databinding.FragmentCookBinding
+import com.aydin.cookbook.model.Cook
+import com.aydin.cookbook.roomdb.CookDAO
+import com.aydin.cookbook.roomdb.CookDatabase
 import com.google.android.material.snackbar.Snackbar
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import io.reactivex.rxjava3.disposables.CompositeDisposable
+import io.reactivex.rxjava3.schedulers.Schedulers
+import java.io.ByteArrayOutputStream
 
 class CookFragment : Fragment() {
     private var _binding: FragmentCookBinding? = null
@@ -32,9 +42,19 @@ class CookFragment : Fragment() {
 
     private var selectedImagesUri : Uri? = null
     private var selecteImagesBitmap : Bitmap? = null
+
+    private lateinit var db : CookDatabase
+    private lateinit var cookDao : CookDAO
+
+    private val mDisposable = CompositeDisposable()
+
+    private var selectedCook : Cook? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         registerLauncher()
+
+        db = Room.databaseBuilder(requireContext(),CookDatabase::class.java,"Cooks").build()
+        cookDao = db.cookDao()
     }
 
     override fun onCreateView(
@@ -58,21 +78,86 @@ class CookFragment : Fragment() {
             val info = CookFragmentArgs.fromBundle(it).info
 
             if (info == "new"){
+                selectedCook = null
                 binding.deleteButton.isEnabled = false
                 binding.nameText.setText("")
                 binding.ingredientsText.setText("")
             } else{
                 binding.saveButton.isEnabled = false
+                val id = CookFragmentArgs.fromBundle(it).id
+
+                mDisposable.add(
+                    cookDao.findById(id)
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(this::handleResponseForGetId)
+                )
+
             }
         }
     }
 
-    fun saveCook (view: View){
+    private fun handleResponseForGetId(cook: Cook) {
+        binding.nameText.setText(cook.name)
+        binding.ingredientsText.setText(cook.ingredients)
+        val bitmap = BitmapFactory.decodeByteArray(cook.image,0,cook.image.size)
+        binding.imageView.setImageBitmap(bitmap)
+        selectedCook = cook
+    }
 
+    fun saveCook (view: View){
+        val name = binding.nameText.text.toString()
+        val ingredients = binding.ingredientsText.text.toString()
+
+        if (selecteImagesBitmap != null){
+            val tinyBitmap = makeBitmapTiny(selecteImagesBitmap!!, 300)
+            val outputStream = ByteArrayOutputStream()
+            tinyBitmap.compress(Bitmap.CompressFormat.PNG, 50, outputStream)
+            val selectedImageByteArray = outputStream.toByteArray()
+
+            val newCook = Cook(name, ingredients, selectedImageByteArray)
+
+            mDisposable.add(
+            cookDao.insert(newCook)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(this::handleResponseForInsert))
+        }
+    }
+
+    private fun handleResponseForInsert() {
+        val actionToMainPage = CookFragmentDirections.actionCookFragmentToListFragment()
+        Navigation.findNavController(requireView()).navigate(actionToMainPage)
+    }
+
+    private fun makeBitmapTiny(bitmap: Bitmap, maxSize: Int) : Bitmap{
+        var height = bitmap.height
+        var width = bitmap.width
+
+        val rate : Double = height.toDouble() / width.toDouble()
+
+        if(rate > 1){
+            height = maxSize
+            val newWidth = maxSize / rate
+            width = newWidth.toInt()
+        } else {
+            width = maxSize
+            val newHeight = maxSize * rate
+            height = newHeight.toInt()
+        }
+
+        return Bitmap.createScaledBitmap(bitmap, width, height,false)
     }
 
     fun deleteCook(view: View){
-
+        if (selectedCook != null){
+            mDisposable.add(
+                cookDao.delete(cook = selectedCook!!)
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(this::handleResponseForInsert)
+            )
+        }
     }
     fun selectImage(view: View){
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU){
@@ -167,5 +252,6 @@ class CookFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+        mDisposable.clear()
     }
 }
